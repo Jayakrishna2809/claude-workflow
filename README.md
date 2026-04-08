@@ -1,6 +1,6 @@
 # Claude Workflow Playbook
 
-This project is a simple HTML-based workflow guide created as part of self-learning and internship exploration of Claude AI.
+This project is a simple HTML-based workflow guide created as part of self-learning exploration of Claude AI.
 
 ## What it covers
 - Claude strengths
