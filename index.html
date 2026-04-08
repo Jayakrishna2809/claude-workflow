@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Workflow Playbook</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #191919;
+    --border: #2a2a2a;
+    --accent: #e8ff47;
+    --accent2: #47c8ff;
+    --accent3: #ff6b47;
+    --text: #f0f0f0;
+    --muted: #888;
+    --danger: #ff4747;
+    --warn: #ffaa47;
+    --safe: #47ff8a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  /* HEADER */
+  .header {
+    padding: 60px 48px 40px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(232,255,71,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(32px, 5vw, 56px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -1px;
+    margin-bottom: 16px;
+  }
+  .header h1 span { color: var(--accent); }
+  .header-sub {
+    color: var(--muted);
+    font-size: 15px;
+    max-width: 600px;
+  }
+
+  /* NAV TABS */
+  .nav {
+    display: flex;
+    gap: 0;
+    padding: 0 48px;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-tab {
+    padding: 16px 20px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* CONTENT */
+  .content {
+    padding: 48px;
+    max-width: 1100px;
+  }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* WORKFLOW CARDS */
+  .workflow-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    margin-bottom: 32px;
+    overflow: hidden;
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  .card-icon {
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .card-tag {
+    margin-left: auto;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    padding: 4px 10px;
+    border-radius: 2px;
+    text-transform: uppercase;
+  }
+  .tag-high { background: rgba(71,255,138,0.12); color: var(--safe); border: 1px solid rgba(71,255,138,0.3); }
+  .tag-med { background: rgba(255,170,71,0.12); color: var(--warn); border: 1px solid rgba(255,170,71,0.3); }
+  .tag-low { background: rgba(255,71,71,0.12); color: var(--danger); border: 1px solid rgba(255,71,71,0.3); }
+
+  .card-body { padding: 24px; }
+
+  /* STEPS */
+  .steps { counter-reset: step; margin-bottom: 24px; }
+  .step {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 14px;
+    counter-increment: step;
+  }
+  .step::before {
+    content: counter(step);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    background: rgba(232,255,71,0.08);
+    border: 1px solid rgba(232,255,71,0.2);
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    border-radius: 2px;
+    margin-top: 2px;
+  }
+  .step-text { font-size: 13.5px; color: #ccc; }
+  .step-text strong { color: var(--text); }
+
+  /* PROMPT TEMPLATE */
+  .prompt-box {
+    background: #0d0d0d;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 2px;
+    padding: 20px;
+    margin: 16px 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    line-height: 1.8;
+    color: #ccc;
+    white-space: pre-wrap;
+    position: relative;
+  }
+  .prompt-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .prompt-var { color: var(--accent2); }
+
+  /* TRUST TABLE */
+  .trust-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    margin-bottom: 1px;
+  }
+  .trust-row.header-row {
+    margin-bottom: 8px;
+  }
+  .trust-cell {
+    padding: 12px 16px;
+    background: var(--surface);
+    font-size: 13px;
+  }
+  .trust-row.header-row .trust-cell {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--surface2);
+  }
+  .trust-safe { border-left: 3px solid var(--safe); }
+  .trust-warn { border-left: 3px solid var(--warn); }
+  .trust-danger { border-left: 3px solid var(--danger); }
+
+  /* INLINE BADGES */
+  .badge {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 2px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    vertical-align: middle;
+  }
+  .badge-safe { background: rgba(71,255,138,0.1); color: var(--safe); border: 1px solid rgba(71,255,138,0.25); }
+  .badge-warn { background: rgba(255,170,71,0.1); color: var(--warn); border: 1px solid rgba(255,170,71,0.25); }
+  .badge-danger { background: rgba(255,71,71,0.1); color: var(--danger); border: 1px solid rgba(255,71,71,0.25); }
+  .badge-info { background: rgba(71,200,255,0.1); color: var(--accent2); border: 1px solid rgba(71,200,255,0.25); }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 24px;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+  .section-sub {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 36px;
+  }
+
+  /* COMPARISON TABLE */
+  .comp-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  .comp-table th {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+  }
+  .comp-table td {
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    font-size: 13px;
+    vertical-align: top;
+  }
+  .comp-table tr:hover td { background: var(--surface); }
+
+  /* DIVIDER */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 28px 0;
+  }
+
+  /* VERIFY BOX */
+  .verify-box {
+    background: rgba(255,170,71,0.05);
+    border: 1px solid rgba(255,170,71,0.2);
+    border-left: 3px solid var(--warn);
+    padding: 14px 18px;
+    border-radius: 2px;
+    margin: 12px 0;
+    font-size: 13px;
+    color: #ccc;
+  }
+  .verify-box strong { color: var(--warn); }
+
+  .danger-box {
+    background: rgba(255,71,71,0.05);
+    border: 1px solid rgba(255,71,71,0.2);
+    border-left: 3px solid var(--danger);
+    padding: 14px 18px;
+    border-radius: 2px;
+    margin: 12px 0;
+    font-size: 13px;
+    color: #ccc;
+  }
+  .danger-box strong { color: var(--danger); }
+
+  .safe-box {
+    background: rgba(71,255,138,0.04);
+    border: 1px solid rgba(71,255,138,0.15);
+    border-left: 3px solid var(--safe);
+    padding: 14px 18px;
+    border-radius: 2px;
+    margin: 12px 0;
+    font-size: 13px;
+    color: #ccc;
+  }
+  .safe-box strong { color: var(--safe); }
+
+  /* TWO COL */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 700px) {
+    .two-col { grid-template-columns: 1fr; }
+    .nav { padding: 0 16px; }
+    .content { padding: 24px 16px; }
+    .header { padding: 32px 16px 24px; }
+    .trust-row { grid-template-columns: 1fr; }
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-label">// Claude Operational Manual — v1.0</div>
+  <h1>Your Personal<br><span>Claude Playbook</span></h1>
+  <p class="header-sub">Practical workflows, prompt templates, trust boundaries, and tool-switching decisions — for real daily use.</p>
+</div>
+
+<nav class="nav">
+  <div class="nav-tab active" onclick="switchTab('jobs')">Job Apps</div>
+  <div class="nav-tab" onclick="switchTab('resume')">Resume</div>
+  <div class="nav-tab" onclick="switchTab('coding')">Coding</div>
+  <div class="nav-tab" onclick="switchTab('research')">Research</div>
+  <div class="nav-tab" onclick="switchTab('automation')">Automation</div>
+  <div class="nav-tab" onclick="switchTab('media')">Media/Press</div>
+  <div class="nav-tab" onclick="switchTab('trust')">Trust Guide</div>
+  <div class="nav-tab" onclick="switchTab('switch')">When to Switch</div>
+</nav>
+
+<!-- ===================== JOB APPS ===================== -->
+<div class="content">
+<div id="tab-jobs" class="section active">
+  <div class="section-title">Job Applications</div>
+  <div class="section-sub">Claude is strong at writing, tailoring, and matching tone — but you own the facts.</div>
+
+  <div class="workflow-card">
+    <div class="card-header">
+      <div class="card-icon">📋</div>
+      <div class="card-title">Step-by-Step Application Workflow</div>
+      <div class="card-tag tag-high">Claude: High</div>
+    </div>
+    <div class="card-body">
+      <div class="steps">
+        <div class="step"><div class="step-text"><strong>Paste the job description in full.</strong> Don't summarize it. The more Claude sees, the better the keyword and tone match.</div></div>
+        <div class="step"><div class="step-text"><strong>Paste your current CV/resume.</strong> Tell Claude what's accurate and what to work with.</div></div>
+        <div class="step"><div class="step-text"><strong>Ask Claude to identify gaps and mismatches</strong> between your profile and the JD before writing anything.</div></div>
+        <div class="step"><div class="step-text"><strong>Ask for a tailored cover letter</strong> with explicit tone, length, and structure instructions.</div></div>
+        <div class="step"><div class="step-text"><strong>Ask Claude to suggest specific bullet rewrites</strong> for your CV that match this JD's language.</div></div>
+        <div class="step"><div class="step-text"><strong>Run a final audit:</strong> ask Claude "What assumptions did you make that I should verify?"</div></div>
+      </div>
+
+      <div class="prompt-label">Prompt Template — Cover Letter</div>
+      <div class="prompt-box">I'm applying for this role: [paste full JD]
+
+My background: [paste CV or key bullet points]
+
+Write a cover letter that:
+- Is <span class="prompt-var">[200 / 300 / 400]</span> words
+- Opens with a specific hook (not "I am excited to apply")
+- Addresses the top 3 requirements from the JD directly
+- Tone: <span class="prompt-var">[confident and direct / warm and collaborative / formal]</span>
+- Does NOT use the phrases "passionate", "synergy", or "results-driven"
+- Closes with a clear call to action
+
+Do not fabricate experience I haven't mentioned. Flag anything you assumed.</div>
+
+      <div class="prompt-label">Prompt Template — Gap Analysis First</div>
+      <div class="prompt-box">Here is a job description: [paste JD]
+Here is my CV: [paste CV]
+
+Before writing anything, do this:
+1. List the top 5 requirements in the JD
+2. Rate how well my CV addresses each (Strong / Partial / Missing)
+3. Tell me what to emphasize and what to NOT mention
+4. Identify any language/keywords I should use that aren't in my CV
+
+Then ask me if I want to proceed to the cover letter.</div>
+
+      <div class="verify-box"><strong>Always verify:</strong> Every factual claim, date, title, and metric. Claude will write confidently but may reframe things beyond what's accurate. You are responsible for accuracy — misrepresentation on an application is your risk, not Claude's.</div>
+      <div class="danger-box"><strong>Never ask Claude to:</strong> Invent experience you don't have, fabricate references, or write skills you can't demonstrate in an interview.</div>
+    </div>
+  </div>
+
+  <div class="workflow-card">
+    <div class="card-header">
+      <div class="card-icon">🎯</div>
+      <div class="card-title">Interview Prep Workflow</div>
+      <div class="card-tag tag-high">Claude: High</div>
+    </div>
+    <div class="card-body">
+      <div class="prompt-label">Prompt Template — Mock Interview</div>
+      <div class="prompt-box">I'm interviewing for: [role + company type]
+My background: [2-3 sentence summary]
+
+Run a mock interview. Ask me 8 questions — a mix of:
+- 3 behavioral (STAR format expected)
+- 3 technical/role-specific
+- 2 difficult/unexpected questions they might throw
+
+After each answer I give, do this:
+1. Rate it (Strong / Acceptable / Weak)
+2. Identify what was missing
+3. Give me a rewritten version that's stronger
+
+Be harsh. Don't tell me it was good if it wasn't.</div>
+
+      <div class="prompt-label">Prompt Template — Salary Negotiation Prep</div>
+      <div class="prompt-box">I've received an offer: [describe offer details]
+My target: [your desired comp]
+Their likely constraints: [anything you know about the company]
+
+Give me:
+1. A negotiation strategy (what to ask for, what order)
+2. Exact scripts for the negotiation call
+3. The 3 most likely pushbacks and how to handle each
+4. What NOT to say
+
+Note: I'll verify market rates separately — focus on strategy and language.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== RESUME ===================== -->
+<div id="tab-resume" class="section">
+  <div class="section-title">Resume Editing</div>
+  <div class="section-sub">Claude is excellent at rewriting bullets for impact — weak at knowing what's standard in your specific industry.</div>
+
+  <div class="workflow-card">
+    <div class="card-header">
+      <div class="card-icon">📄</div>
+      <div class="card-title">Resume Audit & Rewrite Workflow</div>
+      <div class="card-tag tag-high">Claude: High</div>
+    </div>
+    <div class="card-body">
+      <div class="steps">
+        <div class="step"><div class="step-text"><strong>Paste your full CV.</strong> Tell Claude your target role and target industry.</div></div>
+        <div class="step"><div class="step-text"><strong>Ask for a cold audit</strong> — what's weak, what's missing, what's generic.</div></div>
+        <div class="step"><div class="step-text"><strong>Rewrite section by section.</strong> Don't ask for a full rewrite in one shot — quality degrades.</div></div>
+        <div class="step"><div class="step-text"><strong>Ask Claude to apply the XYZ formula</strong> (Accomplished X, as measured by Y, by doing Z) to each bullet.</div></div>
+        <div class="step"><div class="step-text"><strong>Ask for ATS keyword optimization</strong> for a specific JD after the human-facing version is done.</div></div>
+      </div>
+
+      <div class="prompt-label">Prompt Template — Cold Audit</div>
+      <div class="prompt-box">Here is my resume: [paste full CV]
+
+Target role: <span class="prompt-var">[job title]</span>
+Target industry: <span class="prompt-var">[industry]</span>
+Level: <span class="prompt-var">[junior / mid / senior / exec]</span>
+
+Audit this resume ruthlessly. For each section:
+1. What's working
+2. What's weak or generic
+3. What's missing entirely
+4. Specific rewrites for the 3 worst bullets
+
+Do not compliment the good parts excessively. I want actionable critique.</div>
+
+      <div class="prompt-label">Prompt Template — Bullet Rewrite</div>
+      <div class="prompt-box">Rewrite these resume bullets using the XYZ formula:
+"Accomplished [X] as measured by [Y] by doing [Z]"
+
+Current bullets:
+[paste 4-6 bullets]
+
+Rules:
+- Start with strong action verbs (not "Responsible for" or "Helped")
+- Include metrics wherever possible — flag where I need to add them
+- Keep each bullet under 2 lines
+- Avoid: "leveraged", "spearheaded", "synergy", "passionate"
+- Industry: <span class="prompt-var">[your field]</span></div>
+
+      <div class="prompt-label">Prompt Template — ATS Optimization</div>
+      <div class="prompt-box">Here is a job description: [paste JD]
+Here is my resume: [paste resume]
+
+List:
+1. Keywords in the JD that are missing from my resume
+2. Keywords I have that match — good, keep them
+3. Suggested edits to naturally incorporate missing keywords
+4. Sections where keyword density is too low
+
+Do not stuff keywords unnaturally. Integrate them into real bullet content.</div>
+
+      <div class="verify-box"><strong>Always verify:</strong> Every metric you use in bullets. Every date and job title. Claude may round up or reframe things in ways that feel like embellishment. You must own the accuracy.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== CODING ===================== -->
+<div id="tab-coding" class="section">
+  <div class="section-title">Coding & Debugging</div>
+  <div class="section-sub">Claude understands code well and explains clearly. It cannot execute code and misses environment-specific issues.</div>
+
+  <div class="workflow-card">
+    <div class="card-header">
+      <div class="card-icon">💻</div>
+      <div class="card-title">Debugging Workflow</div>
+      <div class="card-tag tag-high">Claude: High</div>
+    </div>
+    <div class="card-body">
+      <div class="steps">
+        <div class="step"><div class="step-text"><strong>Paste the exact error message</strong> — full stack trace, not a summary.</div></div>
+        <div class="step"><div class="step-text"><strong>Paste the relevant code block.</strong> If it spans files, say so and paste both.</div></div>
+        <div class="step"><div class="step-text"><strong>State your environment:</strong> language version, framework, OS, key library versions.</div></div>
+        <div class="step"><div class="step-text"><strong>Ask Claude to explain what the error means before suggesting a fix</strong> — this forces accuracy.</div></div>
+        <div class="step"><div class="step-text"><strong>Ask "what could go wrong with this fix?"</strong> before implementing.</div></div>
+        <div class="step"><div class="step-text"><strong>Test it.</strong> Never assume Claude's code runs without testing.</div></div>
+      </div>
+
+      <div class="prompt-label">Prompt Template — Debugging</div>
+      <div class="prompt-box">Language/framework: <span class="prompt-var">[Python 3.11 / Node 20 / React 18 / etc.]</span>
+Environment: <span class="prompt-var">[local dev / Docker / AWS Lambda / etc.]</span>
+Key libraries: <span class="prompt-var">[list versions]</span>
+
+Error message:
+<span class="prompt-var">[paste full stack trace]</span>
+
+Relevant code:
+<span class="prompt-var">[paste code block]</span>
+
+Do this in order:
+1. Explain what the error means in plain English
+2. Identify the most likely cause (and 1-2 alternatives)
+3. Give me the fix with comments explaining each change
+4. Tell me what else could break because of this fix
+5. Suggest a test to verify it's actually fixed</div>
+
+      <div class="prompt-label">Prompt Template — Code Review</div>
+      <div class="prompt-box">Review this code as a senior engineer would:
+
+<span class="prompt-var">[paste code]</span>
+
+Focus on:
+1. Logic errors or edge cases I've missed
+2. Security issues (injection, auth, input validation)
+3. Performance concerns
+4. Readability — what's unclear
+5. What I should test before shipping
+
+Give specific line-level feedback, not generic advice.
+Use <span class="prompt-var">[language]</span>, <span class="prompt-var">[framework]</span>, targeting <span class="prompt-var">[production / internal / prototype]</span>.</div>
+
+      <div class="prompt-label">Prompt Template — Feature Implementation</div>
+      <div class="prompt-box">I need to implement: <span class="prompt-var">[describe feature clearly]</span>
+
+Existing codebase context:
+- Stack: <span class="prompt-var">[list stack]</span>
+- Pattern we follow: <span class="prompt-var">[MVC / service layer / hooks / etc.]</span>
+- Relevant existing code: <span class="prompt-var">[paste key files]</span>
+
+Constraints:
+- Must not break: <span class="prompt-var">[list existing behavior]</span>
+- Performance requirement: <span class="prompt-var">[if any]</span>
+
+Give me:
+1. The implementation plan before writing code
+2. The code, with comments
+3. Unit tests
+4. What I should manually test that tests won't catch</div>
+
+      <div class="danger-box"><strong>Never deploy Claude's code directly.</strong> It cannot run it. It can't know your specific environment. Always test in staging first. Security-sensitive code (auth, payments, input validation) needs senior human review regardless.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== RESEARCH ===================== -->
+<div id="tab-research" class="section">
+  <div class="section-title">Research</div>
+  <div class="section-sub">Claude is a synthesis engine, not a search engine. Use it to understand and structure — not to source facts.</div>
+
+  <div class="workflow-card">
+    <div class="card-header">
+      <div class="card-icon">🔍</div>
+      <div class="card-title">Research Workflow</div>
+      <div class="card-tag tag-med">Trust: Medium</div>
+    </div>
+    <div class="card-body">
+      <div class="steps">
+        <div class="step"><div class="step-text"><strong>Use Claude to map the landscape</strong> — what are the key concepts, debates, and questions in this area?</div></div>
+        <div class="step"><div class="step-text"><strong>Ask Claude what you should look for</strong> — what sources, what search terms, what databases.</div></div>
+        <div class="step"><div class="step-text"><strong>Do your own sourcing</strong> via Google Scholar, official reports, news, primary sources.</div></div>
+        <div class="step"><div class="step-text"><strong>Paste your found sources into Claude</strong> and ask it to synthesize, compare, and identify gaps.</div></div>
+        <div class="step"><div class="step-text"><strong>Ask Claude to steelman opposing views</strong> — stress-test your conclusion.</div></div>
+      </div>
+
+      <div class="prompt-label">Prompt Template — Topic Landscape</div>
+      <div class="prompt-box">I'm researching: <span class="prompt-var">[topic]</span>
+My purpose: <span class="prompt-var">[academic paper / business decision / personal understanding / article]</span>
+My current knowledge level: <span class="prompt-var">[beginner / intermediate / expert]</span>
+
+Give me:
+1. The 5 most important concepts I need to understand
+2. The key debates or disagreements in this field
+3. What experts disagree on (and why)
+4. The questions I should be asking that I probably haven't thought of
+5. What search terms and source types I should use
+
+Do NOT give me citations — I'll find those myself. Focus on conceptual orientation.</div>
+
+      <div class="prompt-label">Prompt Template — Synthesis from Pasted Sources</div>
+      <div class="prompt-box">I've collected these sources/excerpts on <span class="prompt-var">[topic]</span>:
+
+Source 1: [paste excerpt]
+Source 2: [paste excerpt]
+Source 3: [paste excerpt]
+
+Do this:
+1. Identify the main claims each source makes
+2. Where they agree
+3. Where they contradict each other
+4. What gaps remain — what no source addresses
+5. What conclusion the evidence most supports
+
+Flag anything where you're extrapolating beyond what the sources say.</div>
+
+      <div class="prompt-label">Prompt Template — Devil's Advocate</div>
+      <div class="prompt-box">My current conclusion is: <span class="prompt-var">[state your position]</span>
+
+Based on the research I've shared, steelman the opposing view.
+Give me the strongest possible case AGAINST my conclusion.
+Then tell me:
+1. Which counterarguments are genuinely strong
+2. Which are weak or easily dismissed
+3. What I should acknowledge even if I still hold my position</div>
+
+      <div class="danger-box"><strong>Never ask Claude for citations you plan to use.</strong> It will generate plausible-sounding but often fabricated references. Always source independently and paste sources in for Claude to analyze.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== AUTOMATION ===================== -->
+<div id="tab-automation" class="section">
+  <div class="section-title">Automation</div>
+  <div class="section-sub">Claude is strong at writing automation scripts, designing logic, and explaining APIs — weak at knowing your specific environment.</div>
+
+  <div class="workflow-card">
+    <div class="card-header">
+      <div class="card-icon">⚙️</div>
+      <div class="card-title">Automation Scripting Workflow</div>
+      <div class="card-tag tag-high">Claude: High</div>
+    </div>
+    <div class="card-body">
+      <div class="steps">
+        <div class="step"><div class="step-text"><strong>Describe the task in plain English first.</strong> Don't jump to "write me the code" — describe what you want to happen.</div></div>
+        <div class="step"><div class="step-text"><strong>Ask Claude to design the logic/flow</strong> before writing code. Catch design flaws early.</div></div>
+        <div class="step"><div class="step-text"><strong>Specify your environment precisely:</strong> OS, language, installed tools, existing scripts it should connect with.</div></div>
+        <div class="step"><div class="step-text"><strong>Ask for error handling and logging</strong> explicitly — Claude won't add it unless asked.</div></div>
+        <div class="step"><div class="step-text"><strong>Test on dummy data first.</strong> Never run new automation on real/production data first.</div></div>
+      </div>
+
+      <div class="prompt-label">Prompt Template — Automation Script</div>
+      <div class="prompt-box">I want to automate: <span class="prompt-var">[describe the task in plain English]</span>
+
+Environment:
+- OS: <span class="prompt-var">[Windows / Mac / Linux / Docker]</span>
+- Language preference: <span class="prompt-var">[Python / Bash / JS / etc.]</span>
+- Tools available: <span class="prompt-var">[list installed tools]</span>
+- Runs: <span class="prompt-var">[manually / cron / triggered by X]</span>
+
+Before writing code:
+1. Describe the approach you'd take
+2. List assumptions you're making
+3. Flag any risks I should know about
+
+Then write the script with:
+- Inline comments explaining non-obvious logic
+- Error handling for the most likely failure points
+- A test mode that doesn't affect real data
+- Logging so I can see what it did</div>
+
+      <div class="prompt-label">Prompt Template — Zapier / Make / n8n Logic Design</div>
+      <div class="prompt-box">I want to build a no-code automation that:
+<span class="prompt-var">[describe trigger → action chain in plain English]</span>
+
+Tools I have access to: <span class="prompt-var">[Zapier / Make / n8n / etc.]</span>
+Apps involved: <span class="prompt-var">[list apps]</span>
+
+Design the workflow for me:
+1. Exact trigger → filter → action chain
+2. What data needs to be mapped between steps
+3. Where it will likely break and how to handle it
+4. What I should test before going live
+
+Don't assume I know the tool deeply — explain each step.</div>
+
+      <div class="prompt-label">Prompt Template — API Integration</div>
+      <div class="prompt-box">I need to integrate with: <span class="prompt-var">[API name]</span>
+My goal: <span class="prompt-var">[what you want to do with it]</span>
+My language: <span class="prompt-var">[Python / JS / etc.]</span>
+
+Here is the relevant API documentation: [paste docs or endpoint spec]
+
+Write me:
+1. The authentication setup
+2. The specific API call(s) I need
+3. Response parsing for the data I care about
+4. Error handling for common API errors (rate limits, auth failures, timeouts)
+
+Note: use only what's in the docs I've provided. Don't assume endpoints that aren't listed.</div>
+
+      <div class="verify-box"><strong>Always verify:</strong> API calls against real documentation (Claude may use outdated or slightly wrong endpoint patterns). Test scripts on dummy data. Review any file system or data manipulation operations line by line before running.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MEDIA/PRESS ===================== -->
+<div id="tab-media" class="section">
+  <div class="section-title">Media / Press Research</div>
+  <div class="section-sub">Claude is strong at drafting, framing, and analysis. Weak at finding current coverage — use web search for that.</div>
+
+  <div class="workflow-card">
+    <div class="card-header">
+      <div class="card-icon">📰</div>
+      <div class="card-title">Press & Media Workflow</div>
+      <div class="card-tag tag-med">Verify: High</div>
+    </div>
+    <div class="card-body">
+      <div class="steps">
+        <div class="step"><div class="step-text"><strong>For press release writing:</strong> Claude is excellent. Paste your key facts, audience, and objective.</div></div>
+        <div class="step"><div class="step-text"><strong>For media list research:</strong> Claude knows publication types, not current journalist beats. Use it for strategy, not contact lists.</div></div>
+        <div class="step"><div class="step-text"><strong>For analyzing existing coverage:</strong> Paste the articles into Claude and ask for analysis, angle comparison, or response drafting.</div></div>
+        <div class="step"><div class="step-text"><strong>For media monitoring:</strong> Use real tools (Google Alerts, Mention, Meltwater). Claude can help you define what to monitor.</div></div>
+      </div>
+
+      <div class="prompt-label">Prompt Template — Press Release</div>
+      <div class="prompt-box">Write a press release for:
+
+What happened: <span class="prompt-var">[the announcement/news]</span>
+Company/org: <span class="prompt-var">[name + one-line description]</span>
+Target outlets: <span class="prompt-var">[tech / business / local / trade press]</span>
+Key message: <span class="prompt-var">[what you want people to remember]</span>
+Quote from: <span class="prompt-var">[name + title]</span> — suggested quote theme: <span class="prompt-var">[what it should convey]</span>
+
+Format:
+- Standard inverted pyramid structure
+- Headline + subheadline
+- Dateline + city
+- 400-500 words
+- Boilerplate at the end: <span class="prompt-var">[paste or say "draft one"]</span>
+
+Do not fabricate specific statistics. Flag where I need to add data.</div>
+
+      <div class="prompt-label">Prompt Template — Media Pitch</div>
+      <div class="prompt-box">I need to pitch this story: <span class="prompt-var">[describe your story in 2-3 sentences]</span>
+
+Target journalist beat: <span class="prompt-var">[technology / finance / sustainability / etc.]</span>
+Target publication type: <span class="prompt-var">[national newspaper / trade mag / newsletter / podcast]</span>
+Why it's newsworthy NOW: <span class="prompt-var">[the peg / news hook]</span>
+
+Write a cold pitch email:
+- Subject line (3 options)
+- 150-word pitch body maximum
+- Clear "what's in it for their readers" angle
+- One specific ask
+
+Tone: journalist-to-journalist, not PR-to-journalist.
+No superlatives. No "revolutionary" or "game-changing".</div>
+
+      <div class="prompt-label">Prompt Template — Coverage Analysis</div>
+      <div class="prompt-box">Here are [X] articles about <span class="prompt-var">[topic / company / event]</span>:
+
+[paste articles or excerpts]
+
+Analyze:
+1. What angle/narrative is dominant across coverage
+2. What's being missed or underreported
+3. What the sentiment is (and whether it's shifting)
+4. If this is about my company/topic: what should our response strategy be?
+5. Who seems to be driving the narrative — and who we should be talking to</div>
+
+      <div class="prompt-label">Prompt Template — Spokesperson Prep / Crisis Comms</div>
+      <div class="prompt-box">Situation: <span class="prompt-var">[describe the issue or crisis]</span>
+Our current position: <span class="prompt-var">[what the organization says happened]</span>
+Key stakeholders: <span class="prompt-var">[media / customers / investors / employees]</span>
+
+Give me:
+1. The 3 most likely hostile questions from journalists
+2. Approved holding statements for each
+3. What NOT to say and why
+4. The core message we must land regardless of what they ask
+5. Red lines — what would escalate this if mishandled</div>
+
+      <div class="danger-box"><strong>For media monitoring and finding journalist contacts:</strong> Claude cannot search the web in real-time (unless you've enabled web search in Claude.ai). Do not ask Claude for current journalist names, emails, or recent coverage — it may give outdated or fabricated information.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TRUST GUIDE ===================== -->
+<div id="tab-trust" class="section">
+  <div class="section-title">When to Trust / When to Verify</div>
+  <div class="section-sub">A framework for calibrating how much to rely on Claude's output vs. verify independently.</div>
+
+  <div class="workflow-card">
+    <div class="card-header">
+      <div class="card-icon">⚖️</div>
+      <div class="card-title">Trust Matrix by Task Type</div>
+    </div>
+    <div class="card-body">
+      <div class="trust-row header-row">
+        <div class="trust-cell">Task</div>
+        <div class="trust-cell">Trust Level</div>
+        <div class="trust-cell">What to Verify</div>
+      </div>
+      <div class="trust-row">
+        <div class="trust-cell trust-safe">Writing, editing, tone</div>
+        <div class="trust-cell"><span class="badge badge-safe">High</span></div>
+        <div class="trust-cell">Does it sound like you? Is it factually accurate?</div>
+      </div>
+      <div class="trust-row">
+        <div class="trust-cell trust-safe">Code explanation/debugging</div>
+        <div class="trust-cell"><span class="badge badge-safe">High</span></div>
+        <div class="trust-cell">Run the fix. Test the edge cases.</div>
+      </div>
+      <div class="trust-row">
+        <div class="trust-cell trust-safe">Brainstorming/frameworks</div>
+        <div class="trust-cell"><span class="badge badge-safe">High</span></div>
+        <div class="trust-cell">Validate assumptions with domain knowledge.</div>
+      </div>
+      <div class="trust-row">
+        <div class="trust-cell trust-safe">Structuring / organizing info</div>
+        <div class="trust-cell"><span class="badge badge-safe">High</span></div>
+        <div class="trust-cell">Check nothing important was dropped.</div>
+      </div>
+      <div class="trust-row">
+        <div class="trust-cell trust-warn">Code generation (new code)</div>
+        <div class="trust-cell"><span class="badge badge-warn">Medium</span></div>
+        <div class="trust-cell">Test thoroughly. Review security-sensitive parts.</div>
+      </div>
+      <div class="trust-row">
+        <div class="trust-cell trust-warn">Explaining well-known concepts</div>
+        <div class="trust-cell"><span class="badge badge-warn">Medium</span></div>
+        <div class="trust-cell">Spot-check specifics against primary sources.</div>
+      </div>
+      <div class="trust-row">
+        <div class="trust-cell trust-warn">Research synthesis (your sources)</div>
+        <div class="trust-cell"><span class="badge badge-warn">Medium</span></div>
+        <div class="trust-cell">Verify that synthesis accurately reflects source.</div>
+      </div>
+      <div class="trust-row">
+        <div class="trust-cell trust-warn">Salary/market data</div>
+        <div class="trust-cell"><span class="badge badge-warn">Low-Medium</span></div>
+        <div class="trust-cell">Cross-check with Glassdoor, Levels.fyi, etc.</div>
+      </div>
+      <div class="trust-row">
+        <div class="trust-cell trust-danger">Specific statistics / numbers</div>
+        <div class="trust-cell"><span class="badge badge-danger">Low</span></div>
+        <div class="trust-cell">Always verify from primary source. High hallucination risk.</div>
+      </div>
+      <div class="trust-row">
+        <div class="trust-cell trust-danger">Citations / references</div>
+        <div class="trust-cell"><span class="badge badge-danger">Low</span></div>
+        <div class="trust-cell">Never use without independently finding the source.</div>
+      </div>
+      <div class="trust-row">
+        <div class="trust-cell trust-danger">Legal / medical / financial advice</div>
+        <div class="trust-cell"><span class="badge badge-danger">Very Low</span></div>
+        <div class="trust-cell">Always get professional verification. Use Claude for first draft / understanding only.</div>
+      </div>
+      <div class="trust-row">
+        <div class="trust-cell trust-danger">Current events / real-time info</div>
+        <div class="trust-cell"><span class="badge badge-danger">Very Low</span></div>
+        <div class="trust-cell">Enable web search. Claude's knowledge has a cutoff.</div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="section-title" style="font-size:18px; margin-bottom:12px;">The 3 Trust Rules</div>
+      <div class="two-col">
+        <div class="safe-box"><strong>Trust Claude on:</strong> Process, structure, language, logic, explanation of things it was trained on well. The "shape" of thinking is reliable even when specific facts aren't.</div>
+        <div class="verify-box"><strong>Verify when:</strong> There's a specific fact, number, name, citation, or current event in the answer. The more specific the claim, the more likely it needs checking.</div>
+      </div>
+      <div class="danger-box" style="margin-top:16px;"><strong>Never act on alone:</strong> Legal documents, medical decisions, financial trades, production deployments, government submissions. Claude is a starting point, not an ending point for these.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== WHEN TO SWITCH ===================== -->
+<div id="tab-switch" class="section">
+  <div class="section-title">When to Switch to ChatGPT or Gemini</div>
+  <div class="section-sub">No single AI is best at everything. Here's when to use which tool.</div>
+
+  <div class="workflow-card">
+    <div class="card-header">
+      <div class="card-icon">🔀</div>
+      <div class="card-title">Tool Selection Guide</div>
+    </div>
+    <div class="card-body">
+      <table class="comp-table">
+        <tr>
+          <th>Task</th>
+          <th>Use Claude</th>
+          <th>Use ChatGPT</th>
+          <th>Use Gemini</th>
+        </tr>
+        <tr>
+          <td>Long-form writing, editing, tone-matching</td>
+          <td><span class="badge badge-safe">Primary</span></td>
+          <td>Backup</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>Code execution + data analysis (Python)</td>
+          <td>Understand / debug</td>
+          <td><span class="badge badge-safe">Primary</span> (Code Interpreter)</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>Image generation</td>
+          <td>—</td>
+          <td><span class="badge badge-safe">Primary</span> (DALL-E)</td>
+          <td>Imagen (via Gemini)</td>
+        </tr>
+        <tr>
+          <td>Real-time web search</td>
+          <td>Claude (with search on)</td>
+          <td><span class="badge badge-info">Both work</span></td>
+          <td><span class="badge badge-info">Both work</span></td>
+        </tr>
+        <tr>
+          <td>Google Workspace (Docs, Gmail, Sheets)</td>
+          <td>—</td>
+          <td>—</td>
+          <td><span class="badge badge-safe">Primary</span></td>
+        </tr>
+        <tr>
+          <td>Voice interface</td>
+          <td>Limited</td>
+          <td><span class="badge badge-safe">Primary</span></td>
+          <td>Good</td>
+        </tr>
+        <tr>
+          <td>Complex reasoning, push-back wanted</td>
+          <td><span class="badge badge-safe">Primary</span></td>
+          <td>Backup</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>Document analysis (long PDFs)</td>
+          <td><span class="badge badge-safe">Primary</span></td>
+          <td>Good</td>
+          <td>Good</td>
+        </tr>
+        <tr>
+          <td>Video / audio analysis</td>
+          <td>—</td>
+          <td>Limited</td>
+          <td><span class="badge badge-safe">Primary</span></td>
+        </tr>
+        <tr>
+          <td>Multi-agent / long autonomous tasks</td>
+          <td>Claude (with tools)</td>
+          <td><span class="badge badge-info">Both developing</span></td>
+          <td><span class="badge badge-info">Both developing</span></td>
+        </tr>
+        <tr>
+          <td>Privacy-sensitive tasks</td>
+          <td><span class="badge badge-safe">Preferred</span></td>
+          <td>OK</td>
+          <td>Review policy</td>
+        </tr>
+        <tr>
+          <td>Avoiding sycophantic answers</td>
+          <td><span class="badge badge-safe">Primary</span></td>
+          <td>Historically more agreeable</td>
+          <td>Medium</td>
+        </tr>
+      </table>
+
+      <hr class="divider">
+
+      <div class="section-title" style="font-size:18px; margin-bottom:12px;">Power User Multi-AI Workflow</div>
+      <div class="steps">
+        <div class="step"><div class="step-text"><strong>Claude:</strong> All reasoning, writing, analysis, document review, code understanding. The thinking layer.</div></div>
+        <div class="step"><div class="step-text"><strong>ChatGPT:</strong> Running and testing code (Code Interpreter). Image generation. Voice tasks.</div></div>
+        <div class="step"><div class="step-text"><strong>Gemini:</strong> Anything in Google Workspace. Video/audio analysis. Real-time Google-integrated tasks.</div></div>
+        <div class="step"><div class="step-text"><strong>Perplexity / Claude with search:</strong> Real-time research with citations. Don't ask any AI to cite from memory.</div></div>
+      </div>
+
+      <div class="safe-box"><strong>The meta-rule:</strong> Use Claude to think and write. Use ChatGPT to execute and generate visuals. Use Gemini for Google-native tasks. Combine them — they're tools, not allegiances.</div>
+
+      <hr class="divider">
+
+      <div class="section-title" style="font-size:18px; margin-bottom:12px;">Daily Professional Workflow Using Claude</div>
+      <div class="steps">
+        <div class="step"><div class="step-text"><strong>Morning:</strong> Paste your task list. Ask Claude to identify which items need the deepest thinking and suggest what to tackle first.</div></div>
+        <div class="step"><div class="step-text"><strong>Research phase:</strong> Ask Claude for conceptual orientation. Do your own sourcing. Paste sources back in for synthesis.</div></div>
+        <div class="step"><div class="step-text"><strong>Drafting:</strong> Use Claude for first drafts of everything written — emails, proposals, code comments, documentation.</div></div>
+        <div class="step"><div class="step-text"><strong>Review pass:</strong> Paste your own draft back in. Ask Claude to be a harsh critic. "What's weak? What's missing? What would make this fail?"</div></div>
+        <div class="step"><div class="step-text"><strong>Decisions:</strong> "Here's my reasoning. Find the flaws." Use Claude as a sparring partner, not a validator.</div></div>
+        <div class="step"><div class="step-text"><strong>Before shipping:</strong> Human review of everything — code, content, legal docs. Claude's output is high-quality raw material, not a finished product.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end content -->
+
+<script>
+function switchTab(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>
